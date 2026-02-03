@@ -54,6 +54,179 @@ ask() {
     echo "${value:-$default}"
 }
 
+ask_secret() {
+    local prompt="$1" default="${2:-}" value
+    if [[ -n "$default" ]]; then
+        local masked="${default:0:4}****${default: -4}"
+        printf "${BOLD}%s${NC} [%s]: " "$prompt" "$masked"
+    else
+        printf "${BOLD}%s${NC}: " "$prompt"
+    fi
+    read -r value
+    echo "${value:-$default}"
+}
+
+# ── Check if installed ───────────────────────────────────────────────────────
+
+is_installed() {
+    [[ -f "$INSTALL_DIR/$BINARY_NAME" ]] || [[ -f "/etc/systemd/system/${SERVICE_NAME}.service" ]] || [[ -f "/etc/init.d/${SERVICE_NAME}" ]]
+}
+
+is_service_running() {
+    if command -v systemctl &>/dev/null; then
+        systemctl is-active "$SERVICE_NAME" &>/dev/null
+    elif command -v rc-service &>/dev/null; then
+        rc-service "$SERVICE_NAME" status &>/dev/null
+    else
+        return 1
+    fi
+}
+
+# ── Menu for existing installation ───────────────────────────────────────────
+
+show_installed_menu() {
+    echo
+    printf "${BOLD}${YELLOW}══════════════════════════════════════════════════${NC}\n"
+    printf "${BOLD}${YELLOW}      NFT Gift Bot уже установлен                 ${NC}\n"
+    printf "${BOLD}${YELLOW}══════════════════════════════════════════════════${NC}\n"
+    echo
+    echo "  Каталог: $INSTALL_DIR"
+
+    if is_service_running; then
+        printf "  Статус:  ${GREEN}запущен${NC}\n"
+    else
+        printf "  Статус:  ${RED}остановлен${NC}\n"
+    fi
+    echo
+    echo "  Выберите действие:"
+    echo
+    printf "    ${BOLD}1${NC}) Переустановить (обновить бинарник)\n"
+    printf "    ${BOLD}2${NC}) Изменить настройки (.env)\n"
+    printf "    ${BOLD}3${NC}) Удалить полностью\n"
+    printf "    ${BOLD}4${NC}) Выход\n"
+    echo
+
+    local choice
+    printf "${BOLD}Ваш выбор [1-4]:${NC} "
+    read -r choice
+
+    case "$choice" in
+        1)
+            info "Переустановка..."
+            return 0  # continue with install
+            ;;
+        2)
+            edit_config_interactive
+            exit 0
+            ;;
+        3)
+            uninstall_bot
+            exit 0
+            ;;
+        4|"")
+            info "Выход без изменений"
+            exit 0
+            ;;
+        *)
+            warn "Неверный выбор"
+            exit 1
+            ;;
+    esac
+}
+
+# ── Interactive config editor ────────────────────────────────────────────────
+
+edit_config_interactive() {
+    echo
+    printf "${BOLD}${CYAN}══════════════════════════════════════════════════${NC}\n"
+    printf "${BOLD}${CYAN}          Изменение настроек                      ${NC}\n"
+    printf "${BOLD}${CYAN}══════════════════════════════════════════════════${NC}\n"
+    echo
+
+    # Load existing config
+    local OLD_BOT_TOKEN="" OLD_ADMIN_ID="" OLD_LICENSE_KEY=""
+    if [[ -f "$INSTALL_DIR/.env" ]]; then
+        set +u
+        source "$INSTALL_DIR/.env" 2>/dev/null || true
+        OLD_BOT_TOKEN="${BOT_TOKEN:-}"
+        OLD_ADMIN_ID="${ADMIN_ID:-}"
+        OLD_LICENSE_KEY="${LICENSE_KEY:-}"
+        set -u
+    fi
+
+    echo "  Текущие значения показаны в скобках."
+    echo "  Нажмите Enter, чтобы оставить без изменений."
+    echo
+
+    echo "  1/3. Telegram Bot Token"
+    CFG_BOT_TOKEN=$(ask_secret "       BOT_TOKEN" "$OLD_BOT_TOKEN")
+    [[ -z "$CFG_BOT_TOKEN" ]] && die "BOT_TOKEN обязателен"
+    echo
+
+    echo "  2/3. Telegram ID владельца"
+    CFG_ADMIN_ID=$(ask "       ADMIN_ID" "$OLD_ADMIN_ID")
+    [[ -z "$CFG_ADMIN_ID" ]] && die "ADMIN_ID обязателен"
+    echo
+
+    echo "  3/3. Лицензионный ключ"
+    CFG_LICENSE_KEY=$(ask_secret "       LICENSE_KEY" "$OLD_LICENSE_KEY")
+    [[ -z "$CFG_LICENSE_KEY" ]] && die "LICENSE_KEY обязателен"
+    echo
+
+    write_env
+
+    # Restart service if running
+    if is_service_running; then
+        info "Перезапускаю сервис..."
+        if command -v systemctl &>/dev/null; then
+            systemctl restart "$SERVICE_NAME"
+        elif command -v rc-service &>/dev/null; then
+            rc-service "$SERVICE_NAME" restart
+        fi
+        ok "Сервис перезапущен с новыми настройками"
+    else
+        ok "Настройки сохранены. Запустите сервис вручную."
+    fi
+}
+
+# ── Uninstall ────────────────────────────────────────────────────────────────
+
+uninstall_bot() {
+    echo
+    printf "${BOLD}${RED}══════════════════════════════════════════════════${NC}\n"
+    printf "${BOLD}${RED}              Удаление NFT Gift Bot               ${NC}\n"
+    printf "${BOLD}${RED}══════════════════════════════════════════════════${NC}\n"
+    echo
+
+    printf "${BOLD}Вы уверены? Все данные будут удалены. [y/N]:${NC} "
+    local confirm
+    read -r confirm
+
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        info "Отменено"
+        return
+    fi
+
+    info "Останавливаю сервис..."
+    if command -v systemctl &>/dev/null; then
+        systemctl stop "$SERVICE_NAME" 2>/dev/null || true
+        systemctl disable "$SERVICE_NAME" 2>/dev/null || true
+        rm -f "/etc/systemd/system/${SERVICE_NAME}.service"
+        systemctl daemon-reload 2>/dev/null || true
+    fi
+
+    if command -v rc-service &>/dev/null; then
+        rc-service "$SERVICE_NAME" stop 2>/dev/null || true
+        rc-update del "$SERVICE_NAME" 2>/dev/null || true
+        rm -f "/etc/init.d/${SERVICE_NAME}"
+    fi
+
+    info "Удаляю файлы..."
+    rm -rf "$INSTALL_DIR"
+
+    ok "NFT Gift Bot полностью удалён"
+}
+
 # ── Detect distribution ──────────────────────────────────────────────────────
 
 DISTRO=""
@@ -354,6 +527,12 @@ main() {
     # Check root
     if [[ $EUID -ne 0 ]]; then
         die "Запустите скрипт от root:\n  sudo bash install.sh"
+    fi
+
+    # Check if already installed
+    if is_installed; then
+        show_installed_menu
+        # If we reach here, user chose to reinstall
     fi
 
     detect_distro
