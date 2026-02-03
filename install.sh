@@ -46,9 +46,9 @@ die()   { err "$*"; exit 1; }
 ask() {
     local prompt="$1" default="${2:-}" value
     if [[ -n "$default" ]]; then
-        printf "${BOLD}%s${NC} [%s]: " "$prompt" "$default"
+        printf "${BOLD}%s${NC} [%s]: " "$prompt" "$default" >&2
     else
-        printf "${BOLD}%s${NC}: " "$prompt"
+        printf "${BOLD}%s${NC}: " "$prompt" >&2
     fi
     read -r value </dev/tty
     echo "${value:-$default}"
@@ -58,9 +58,9 @@ ask_secret() {
     local prompt="$1" default="${2:-}" value
     if [[ -n "$default" ]]; then
         local masked="${default:0:4}****${default: -4}"
-        printf "${BOLD}%s${NC} [%s]: " "$prompt" "$masked"
+        printf "${BOLD}%s${NC} [%s]: " "$prompt" "$masked" >&2
     else
-        printf "${BOLD}%s${NC}: " "$prompt"
+        printf "${BOLD}%s${NC}: " "$prompt" >&2
     fi
     read -r value </dev/tty
     echo "${value:-$default}"
