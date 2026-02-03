@@ -3,8 +3,8 @@
 #  NFT Gift Bot — Installer
 #
 #  Usage:
-#    curl -fsSL https://raw.githubusercontent.com/seventyzero/nft-gift-bot-release/main/install.sh | sudo bash
-#    wget -qO- https://raw.githubusercontent.com/seventyzero/nft-gift-bot-release/main/install.sh | sudo bash
+#    curl -fsSL https://raw.githubusercontent.com/fitymico/nft-gift-bot-release/main/install.sh | sudo bash
+#    wget -qO- https://raw.githubusercontent.com/fitymico/nft-gift-bot-release/main/install.sh | sudo bash
 #
 #  Скачивает бинарник, настраивает окружение, создаёт systemd/OpenRC-сервис.
 #
@@ -26,7 +26,7 @@ SERVICE_NAME="nft-gift-bot"
 BINARY_NAME="nft-gift-bot"
 
 # GitHub repo
-GITHUB_REPO="${GITHUB_REPO:-seventyzero/nft-gift-bot-release}"
+GITHUB_REPO="${GITHUB_REPO:-fitymico/nft-gift-bot-release}"
 
 # ── Colours & helpers ────────────────────────────────────────────────────────
 
@@ -138,7 +138,6 @@ download_binary() {
 CFG_BOT_TOKEN=""
 CFG_ADMIN_ID=""
 CFG_LICENSE_KEY=""
-CFG_SESSION_STRING=""
 
 collect_config() {
     echo
@@ -155,28 +154,22 @@ collect_config() {
         set -u
     fi
 
-    echo "  1/4. Telegram Bot"
+    echo "  1/3. Telegram Bot"
     echo "       Создайте бота через @BotFather и скопируйте токен."
     CFG_BOT_TOKEN=$(ask "       BOT_TOKEN" "${BOT_TOKEN:-}")
     [[ -z "$CFG_BOT_TOKEN" ]] && die "BOT_TOKEN обязателен"
     echo
 
-    echo "  2/4. Telegram ID владельца"
+    echo "  2/3. Telegram ID владельца"
     echo "       Узнайте свой ID через @userinfobot или @getmyid_bot."
     CFG_ADMIN_ID=$(ask "       ADMIN_ID" "${ADMIN_ID:-}")
     [[ -z "$CFG_ADMIN_ID" ]] && die "ADMIN_ID обязателен"
     echo
 
-    echo "  3/4. Лицензионный ключ"
+    echo "  3/3. Лицензионный ключ"
     echo "       Получен после оплаты SELF-HOST подписки в Service-Bot."
     CFG_LICENSE_KEY=$(ask "       LICENSE_KEY" "${LICENSE_KEY:-}")
     [[ -z "$CFG_LICENSE_KEY" ]] && die "LICENSE_KEY обязателен"
-    echo
-
-    echo "  4/4. Session String"
-    echo "       Получена при авторизации через веб-страницу Service-Bot."
-    CFG_SESSION_STRING=$(ask "       SESSION_STRING" "${SESSION_STRING:-}")
-    [[ -z "$CFG_SESSION_STRING" ]] && die "SESSION_STRING обязателен"
     echo
 }
 
@@ -188,7 +181,6 @@ write_env() {
 BOT_TOKEN=${CFG_BOT_TOKEN}
 ADMIN_ID=${CFG_ADMIN_ID}
 LICENSE_KEY=${CFG_LICENSE_KEY}
-SESSION_STRING=${CFG_SESSION_STRING}
 ENVEOF
 
     chmod 600 "$INSTALL_DIR/.env"
@@ -332,6 +324,11 @@ print_summary() {
     fi
 
     echo
+    printf "${CYAN}  Авторизация Telegram:${NC}\n"
+    echo "    После запуска откройте бота в Telegram и отправьте /auth"
+    echo "    Бот запросит номер телефона и код подтверждения."
+    echo
+
     printf "${CYAN}  Изменение настроек:${NC}\n"
     echo "    1. Отредактируйте $INSTALL_DIR/.env"
     echo "    2. sudo systemctl restart $SERVICE_NAME"
