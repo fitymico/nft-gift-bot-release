@@ -50,7 +50,7 @@ ask() {
     else
         printf "${BOLD}%s${NC}: " "$prompt"
     fi
-    read -r value
+    read -r value </dev/tty
     echo "${value:-$default}"
 }
 
@@ -62,7 +62,7 @@ ask_secret() {
     else
         printf "${BOLD}%s${NC}: " "$prompt"
     fi
-    read -r value
+    read -r value </dev/tty
     echo "${value:-$default}"
 }
 
@@ -108,7 +108,7 @@ show_installed_menu() {
 
     local choice
     printf "${BOLD}Ваш выбор [1-4]:${NC} "
-    read -r choice
+    read -r choice </dev/tty
 
     case "$choice" in
         1)
@@ -200,7 +200,7 @@ uninstall_bot() {
 
     printf "${BOLD}Вы уверены? Все данные будут удалены. [y/N]:${NC} "
     local confirm
-    read -r confirm
+    read -r confirm </dev/tty
 
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         info "Отменено"
