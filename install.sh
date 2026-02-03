@@ -159,17 +159,17 @@ edit_config_interactive() {
     echo
 
     echo "  1/3. Telegram Bot Token"
-    CFG_BOT_TOKEN=$(ask_secret "       BOT_TOKEN" "$OLD_BOT_TOKEN")
+    CFG_BOT_TOKEN=$(ask_secret "       Вставьте токен" "$OLD_BOT_TOKEN")
     [[ -z "$CFG_BOT_TOKEN" ]] && die "BOT_TOKEN обязателен"
     echo
 
     echo "  2/3. Telegram ID владельца"
-    CFG_ADMIN_ID=$(ask "       ADMIN_ID" "$OLD_ADMIN_ID")
+    CFG_ADMIN_ID=$(ask "       Вставьте ID" "$OLD_ADMIN_ID")
     [[ -z "$CFG_ADMIN_ID" ]] && die "ADMIN_ID обязателен"
     echo
 
     echo "  3/3. Лицензионный ключ"
-    CFG_LICENSE_KEY=$(ask_secret "       LICENSE_KEY" "$OLD_LICENSE_KEY")
+    CFG_LICENSE_KEY=$(ask_secret "       Вставьте ключ" "$OLD_LICENSE_KEY")
     [[ -z "$CFG_LICENSE_KEY" ]] && die "LICENSE_KEY обязателен"
     echo
 
@@ -329,19 +329,19 @@ collect_config() {
 
     echo "  1/3. Telegram Bot"
     echo "       Создайте бота через @BotFather и скопируйте токен."
-    CFG_BOT_TOKEN=$(ask "       BOT_TOKEN" "${BOT_TOKEN:-}")
+    CFG_BOT_TOKEN=$(ask "       Вставьте токен" "${BOT_TOKEN:-}")
     [[ -z "$CFG_BOT_TOKEN" ]] && die "BOT_TOKEN обязателен"
     echo
 
     echo "  2/3. Telegram ID владельца"
     echo "       Узнайте свой ID через @userinfobot или @getmyid_bot."
-    CFG_ADMIN_ID=$(ask "       ADMIN_ID" "${ADMIN_ID:-}")
+    CFG_ADMIN_ID=$(ask "       Вставьте ID" "${ADMIN_ID:-}")
     [[ -z "$CFG_ADMIN_ID" ]] && die "ADMIN_ID обязателен"
     echo
 
     echo "  3/3. Лицензионный ключ"
     echo "       Получен после оплаты SELF-HOST подписки в Service-Bot."
-    CFG_LICENSE_KEY=$(ask "       LICENSE_KEY" "${LICENSE_KEY:-}")
+    CFG_LICENSE_KEY=$(ask "       Вставьте ключ" "${LICENSE_KEY:-}")
     [[ -z "$CFG_LICENSE_KEY" ]] && die "LICENSE_KEY обязателен"
     echo
 }
